@@ -1,0 +1,23 @@
+{
+    "name": "xiilumina/eklasepro",
+    "description": "Eklase 2",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\": "database/",
+            "Core\\": "core/"
+        }
+    },
+    "authors": [
+        {
+            "name": "XIIILumina",
+            "email": "125544284+XIIILumina@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+    
+}
