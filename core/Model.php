@@ -40,9 +40,7 @@ class Model extends Database
         self::$statement->execute();
         return new static;
     }
-    /**
-     * @return Model
-     */
+
     public static function all(): Model
     {
         $sql = "SELECT * FROM " . static::$table;
@@ -51,10 +49,6 @@ class Model extends Database
         return new static;
     }
 
-    /**
-     * @param int $id
-     * @return Model
-     */
     public static function find(int $id): Model
     {
         $sql = "SELECT * FROM " . static::$table . " WHERE id = :id";
@@ -62,9 +56,7 @@ class Model extends Database
         self::$statement->execute(['id' => $id]);
         return new static;
     }
-    /**
-     * @param array<int,mixed> $data
-     */
+
     public static function create(array $data): self
     {
         $sql = "INSERT INTO " . static::$table . " (";
@@ -77,15 +69,12 @@ class Model extends Database
         }
         $sql = substr($sql, 0, -1) . ')';
         $query = self::$connection->prepare($sql);
-        $query->execute($data);
+        if (!$query->execute($data)) {
+            throw new \Exception('Failed to create record in ' . static::$table . ': ' . implode(', ', $query->errorInfo()));
+        }
         return new static;
     }
 
-    /**
-     * @param int $id
-     * @param array<int,mixed> $data
-     * @return Model
-     */
     public static function update(int $id, array $data): Model
     {
         $sql = "UPDATE " . static::$table . " SET ";
@@ -99,10 +88,6 @@ class Model extends Database
         return new static;
     }
 
-    /**
-     * @param int $id
-     * @return Model
-     */
     public static function delete(int $id): Model
     {
         $sql = "DELETE FROM " . static::$table . " WHERE id = :id";
@@ -111,12 +96,6 @@ class Model extends Database
         return new static;
     }
 
-    /**
-     * @param string $key
-     * @param string $operator
-     * @param string $value
-     * @return Model
-     */
     public static function where(string $key, string $operator, string $value): Model
     {
         $sql = "SELECT * FROM " . static::$table . " WHERE " . $key . " " . $operator . " :value";
@@ -140,12 +119,6 @@ class Model extends Database
         return self::$statement->fetchColumn();
     }
 
-    /**
-     * @param string $table
-     * @param string $key
-     * @param string $value
-     * @return Model
-     */
     public static function join(string $table, string $key, string $value): Model
     {
         $sql = "SELECT * FROM " . static::$table . " INNER JOIN " . $table . " ON " . static::$table . "." . $key . " = " . $table . "." . $value;
@@ -154,10 +127,6 @@ class Model extends Database
         return new static;
     }
 
-    /**
-     * @param string $key
-     * @return Model
-     */
     public static function groupBy(string $key): Model
     {
         $sql = "SELECT * FROM " . static::$table . " GROUP BY " . $key;
@@ -166,11 +135,6 @@ class Model extends Database
         return new static;
     }
 
-    /**
-     * @param string $key
-     * @param string $order
-     * @return Model
-     */
     public static function orderBy(string $key, string $order = 'ASC'): Model
     {
         $sql = static::$table . " ORDER BY " . $key . " " . $order;
@@ -183,16 +147,10 @@ class Model extends Database
     {
         return self::$statement->rowCount();
     }
-    /**
-     * @return Model
-     * @param mixed $query_string
-     * @param mixed $params
-     */
+
     public static function execute(mixed $query_string, mixed $params): Model
     {
-
         $query = self::$connection->prepare($query_string);
-
         $query->execute($params);
         return new static;
     }
