@@ -3,6 +3,8 @@
 use App\Controllers\Auth\SessionController;
 use App\Controllers\Auth\UserController;
 use App\Controllers\PageController;
+use App\Controllers\GradeController;
+
 
 global $router;
 
@@ -27,3 +29,6 @@ $router->post('/profile/image', [UserController::class, 'image']);
 $router->post('/profile/update', [UserController::class, 'update']);
 $router->post('/profile/delete-image', [UserController::class, 'deleteImage']); // ✅ Новый маршрут
 $router->post('/profile/delete', [UserController::class, 'delete']);
+
+$router->get('/view-grades', [GradeController::class, 'viewGrades']);
+$router->get('/filter-students', [GradeController::class, 'filterStudents']);
