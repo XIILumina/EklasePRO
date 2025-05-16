@@ -5,7 +5,7 @@ use App\Models\User;
 use Core\Session;
 use JetBrains\PhpStorm\NoReturn;
 
-#[NoReturn] function dd($value): void
+function dd($value): void
 {
     echo "<pre>";
     var_dump($value);
@@ -14,7 +14,7 @@ use JetBrains\PhpStorm\NoReturn;
     die();
 }
 
-#[NoReturn] function abort($code = 404): void
+function abort($code = 404): void
 {
     http_response_code($code);
     require base_path("views/{$code}.php");
@@ -110,7 +110,7 @@ function request(string $field)
  * @param string|null $method
  * @return void
  */
-#[NoReturn] function redirect_and_save(string $path, mixed $old_value, mixed $new_value, string $model, string $method): void
+function redirect_and_save(string $path, mixed $old_value, mixed $new_value, string $model, string $method): void
 {
     $backtrace = debug_backtrace();
     $info      = $backtrace[1];

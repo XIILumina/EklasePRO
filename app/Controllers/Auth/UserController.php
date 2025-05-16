@@ -37,12 +37,14 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required',
             'email' => 'required|email|unique:user,email',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
         ]);
 
         $username = request('username');
         $email = request('email');
         $password = hash_make(request('password'));
+        $first_name = request('first_name');
+        $last_name = request('last_name');
         $role = 'student';
 
         try {

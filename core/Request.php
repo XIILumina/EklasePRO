@@ -70,7 +70,7 @@ class Request
         return;
     }
 
-    #[NoReturn] public function error($field, $error): void
+    public function error($field, $error): void
     {
         Session::flash('errors', [$field => [$error]]);
         Session::flash('old', $this->data);

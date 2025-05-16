@@ -6,9 +6,5 @@ use Core\Model;
 
 class Grade extends Model
 {
-    // Таблица в базе данных
-    protected static $table = 'grades';
-
-    // Заполняемые поля
-    protected $fillable = ['student_id', 'subject_id', 'grade', 'date'];
+    protected static string $table = 'grades';
 }

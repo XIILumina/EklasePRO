@@ -104,6 +104,13 @@ class Model extends Database
         return new static;
     }
 
+    public static function query(string $sql, array $params = []): self
+    {
+        self::$statement = self::$connection->prepare($sql);
+        self::$statement->execute($params);
+        return new static;
+    }
+
     public static function get()
     {
         return self::$statement->fetch();
@@ -137,7 +144,7 @@ class Model extends Database
 
     public static function orderBy(string $key, string $order = 'ASC'): Model
     {
-        $sql = static::$table . " ORDER BY " . $key . " " . $order;
+        $sql = "SELECT * FROM " . static::$table . " ORDER BY " . $key . " " . $order;
         self::$statement = self::$connection->prepare($sql);
         self::$statement->execute();
         return new static;
