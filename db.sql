@@ -15,20 +15,18 @@ CREATE TABLE users (
 
 -- Classes table (to group students)
 CREATE TABLE classes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    class_name VARCHAR(50) NOT NULL UNIQUE,
-    description TEXT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Class-Student assignment table (many-to-many relationship)
+-- class_students
 CREATE TABLE class_students (
-    class_id INT,
-    user_id INT,
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    class_id INT NOT NULL,
+    user_id INT NOT NULL,
     PRIMARY KEY (class_id, user_id),
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Lessons table (to define lessons like English, Math, etc.)
@@ -79,4 +77,30 @@ CREATE TABLE mail (
     is_read BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE detentions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id INT NOT NULL,
+    teacher_id INT NOT NULL,
+    reason TEXT NOT NULL,
+    detention_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Update diaries table (already provided, but verify)
+CREATE TABLE diaries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_id INT NOT NULL,
+    lesson_id INT NULL,
+    teacher_id INT NULL,
+    diary_date DATE NOT NULL,
+    slot_number INT NOT NULL, -- 1 to 8 for lesson slots
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (class_id, diary_date, slot_number)
 );

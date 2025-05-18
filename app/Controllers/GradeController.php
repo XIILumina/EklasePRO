@@ -3,27 +3,25 @@
 namespace App\Controllers;
 
 use App\Models\Grade;
+use App\Models\ClassModel;
+use App\Models\Lesson;
+use App\Models\User;
 use Core\Request;
 use Core\Session;
+use Core\Mail;
 
 class GradeController extends Controller
 {
     protected static string $model = 'Grade';
 
-    // Display all grades for a class, student, or the logged-in student
     public function index(Request $request): void
     {
         if (!isset($_SESSION['user'])) {
             redirect('/login');
         }
 
-        $user_role = $_SESSION['user']['role'] ?? null;
+        $user_role = $_SESSION['user']['role'];
         $user_id = (int)$_SESSION['user']['id'];
-
-        // Debug: Log role to verify it's correct
-        // Uncomment to debug
-        // error_log("User role: $user_role, User ID: $user_id");
-
         $class_id = $request->input('class_id') ? (int)$request->input('class_id') : null;
         $student_id = $request->input('student_id') ? (int)$request->input('student_id') : null;
 
@@ -37,15 +35,9 @@ class GradeController extends Controller
         $conditions = [];
 
         if ($user_role === 'student') {
-            // Students can only view their own grades
             $conditions[] = "g.student_id = ?";
             $params[] = $user_id;
-        } else if (!in_array($user_role, ['teacher', 'admin'])) {
-            // Redirect non-authorized users (shouldn't reach here, but as a fallback)
-            Session::flash('error', 'Unauthorized access.');
-            redirect('/login');
         } else {
-            // Teachers/admins can filter by class_id or student_id
             if ($class_id) {
                 $conditions[] = "g.class_id = ?";
                 $params[] = $class_id;
@@ -62,26 +54,38 @@ class GradeController extends Controller
 
         try {
             $grades = Grade::query($query, $params)->getAll();
+            $classes = $user_role !== 'student' ? ClassModel::all()->getAll() : [];
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to load grades: ' . $e->getMessage());
             Session::flash('error', 'Failed to load grades. Please try again.');
             redirect('/grades');
         }
 
-        view('grades/index', ['title' => 'Grades', 'grades' => $grades]);
+        view('grades/index', [
+            'title' => 'Grades',
+            'grades' => $grades,
+            'classes' => $classes,
+            'class_id' => $class_id,
+        ]);
     }
 
-    // Show form to create a new grade
-    public function create(): void
+    public function create(Request $request): void
     {
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['teacher', 'admin'])) {
             redirect('/login');
         }
 
+        $class_id = (int)$request->input('class_id');
+
         try {
-            $classes = Grade::query("SELECT * FROM classes")->getAll();
-            $lessons = Grade::query("SELECT * FROM lessons")->getAll();
-            $students = Grade::query("SELECT u.* FROM users u JOIN class_students cs ON u.id = cs.user_id WHERE u.role = 'student'")->getAll();
+            $classes = ClassModel::all()->getAll();
+            $lessons = Lesson::all()->getAll();
+            $students = $class_id ? User::query(
+                "SELECT u.* FROM users u JOIN class_students cs ON u.id = cs.user_id WHERE cs.class_id = ? AND u.role = 'student'",
+                [$class_id]
+            )->getAll() : [];
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to load create form: ' . $e->getMessage());
             Session::flash('error', 'Failed to load form data. Please try again.');
             redirect('/grades');
         }
@@ -90,11 +94,11 @@ class GradeController extends Controller
             'title' => 'Add Grade',
             'classes' => $classes,
             'lessons' => $lessons,
-            'students' => $students
+            'students' => $students,
+            'class_id' => $class_id,
         ]);
     }
 
-    // Store a new grade
     public function store(Request $request): void
     {
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['teacher', 'admin'])) {
@@ -107,7 +111,7 @@ class GradeController extends Controller
             'lesson_id' => 'required|numeric',
             'grade_value' => 'required|numeric|min:0|max:100',
             'grade_date' => 'required|date',
-            'comments' => 'nullable'
+            'comments' => 'nullable',
         ]);
 
         $data = [
@@ -117,20 +121,34 @@ class GradeController extends Controller
             'teacher_id' => (int)$_SESSION['user']['id'],
             'grade_value' => (float)$request->input('grade_value'),
             'grade_date' => $request->input('grade_date'),
-            'comments' => $request->input('comments')
+            'comments' => $request->input('comments'),
         ];
 
         try {
             Grade::create($data);
+
+            $student = User::find($data['student_id'])->get();
+            $lesson = Lesson::find($data['lesson_id'])->get();
+            $class = ClassModel::find($data['class_id'])->get();
+            $body = "
+                <h2>New Grade Assigned</h2>
+                <p><strong>Class:</strong> {$class['class_name']}</p>
+                <p><strong>Lesson:</strong> {$lesson['lesson_name']}</p>
+                <p><strong>Grade:</strong> {$data['grade_value']}</p>
+                <p><strong>Date:</strong> {$data['grade_date']}</p>
+                <p><strong>Comments:</strong> " . ($data['comments'] ?: 'None') . "</p>
+            ";
+            Mail::send($student['email'], 'New Grade Assigned', $body);
+
             Session::flash('success', 'Grade added successfully.');
-            redirect_and_save('/grades?class_id=' . $data['class_id'], [], $data, 'Grade', 'store');
+            redirect('/grades?class_id=' . $data['class_id']);
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to store grade: ' . $e->getMessage());
             Session::flash('error', 'Failed to add grade. Please try again.');
-            redirect('/grades/create');
+            redirect('/grades/create?class_id=' . $data['class_id']);
         }
     }
 
-    // Show form to edit a grade
     public function edit(Request $request): void
     {
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['teacher', 'admin'])) {
@@ -140,17 +158,20 @@ class GradeController extends Controller
         $id = (int)$request->input('id');
 
         try {
-            $grade = Grade::where('id', '=', $id)->get();
-            $classes = Grade::query("SELECT * FROM classes")->getAll();
-            $lessons = Grade::query("SELECT * FROM lessons")->getAll();
-            $students = Grade::query("SELECT u.* FROM users u JOIN class_students cs ON u.id = cs.user_id WHERE u.role = 'student'")->getAll();
+            $grade = Grade::find($id)->get();
+            if (!$grade) {
+                Session::flash('error', 'Grade not found.');
+                redirect('/grades');
+            }
+            $classes = ClassModel::all()->getAll();
+            $lessons = Lesson::all()->getAll();
+            $students = User::query(
+                "SELECT u.* FROM users u JOIN class_students cs ON u.id = cs.user_id WHERE cs.class_id = ? AND u.role = 'student'",
+                [$grade['class_id']]
+            )->getAll();
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to load edit form: ' . $e->getMessage());
             Session::flash('error', 'Failed to load grade data. Please try again.');
-            redirect('/grades');
-        }
-
-        if (!$grade) {
-            Session::flash('error', 'Grade not found.');
             redirect('/grades');
         }
 
@@ -159,11 +180,10 @@ class GradeController extends Controller
             'grade' => $grade,
             'classes' => $classes,
             'lessons' => $lessons,
-            'students' => $students
+            'students' => $students,
         ]);
     }
 
-    // Update a grade
     public function update(Request $request): void
     {
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['teacher', 'admin'])) {
@@ -177,7 +197,7 @@ class GradeController extends Controller
             'lesson_id' => 'required|numeric',
             'grade_value' => 'required|numeric|min:0|max:100',
             'grade_date' => 'required|date',
-            'comments' => 'nullable'
+            'comments' => 'nullable',
         ]);
 
         $id = (int)$request->input('id');
@@ -185,22 +205,37 @@ class GradeController extends Controller
             'student_id' => (int)$request->input('student_id'),
             'class_id' => (int)$request->input('class_id'),
             'lesson_id' => (int)$request->input('lesson_id'),
+            'teacher_id' => (int)$_SESSION['user']['id'],
             'grade_value' => (float)$request->input('grade_value'),
             'grade_date' => $request->input('grade_date'),
-            'comments' => $request->input('comments')
+            'comments' => $request->input('comments'),
         ];
 
         try {
             Grade::update($id, $data);
+
+            $student = User::find($data['student_id'])->get();
+            $lesson = Lesson::find($data['lesson_id'])->get();
+            $class = ClassModel::find($data['class_id'])->get();
+            $body = "
+                <h2>Grade Updated</h2>
+                <p><strong>Class:</strong> {$class['class_name']}</p>
+                <p><strong>Lesson:</strong> {$lesson['lesson_name']}</p>
+                <p><strong>Grade:</strong> {$data['grade_value']}</p>
+                <p><strong>Date:</strong> {$data['grade_date']}</p>
+                <p><strong>Comments:</strong> " . ($data['comments'] ?: 'None') . "</p>
+            ";
+            Mail::send($student['email'], 'Grade Updated', $body);
+
             Session::flash('success', 'Grade updated successfully.');
-            redirect_and_save('/grades?class_id=' . $data['class_id'], [], $data, 'Grade', 'update');
+            redirect('/grades?class_id=' . $data['class_id']);
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to update grade: ' . $e->getMessage());
             Session::flash('error', 'Failed to update grade. Please try again.');
             redirect('/grades/' . $id . '/edit');
         }
     }
 
-    // Delete a grade
     public function delete(Request $request): void
     {
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['teacher', 'admin'])) {
@@ -210,7 +245,7 @@ class GradeController extends Controller
         $id = (int)$request->input('id');
 
         try {
-            $grade = Grade::where('id', '=', $id)->get();
+            $grade = Grade::find($id)->get();
             if (!$grade) {
                 Session::flash('error', 'Grade not found.');
                 redirect('/grades');
@@ -218,10 +253,50 @@ class GradeController extends Controller
 
             Grade::delete($id);
             Session::flash('success', 'Grade deleted successfully.');
-            redirect_and_save('/grades', [], $id, 'Grade', 'destroy');
+            redirect('/grades?class_id=' . $grade['class_id']);
         } catch (\Exception $e) {
+            error_log('GradeController: Failed to delete grade: ' . $e->getMessage());
             Session::flash('error', 'Failed to delete grade. Please try again.');
             redirect('/grades');
+        }
+    }
+
+    public function bulkUpdate(Request $request): void
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+            redirect('/login');
+        }
+
+        $request->validate([
+            'grades' => 'required|array',
+            'grades.*.id' => 'required|numeric',
+            'grades.*.grade_value' => 'required|numeric|min:0|max:100',
+            'grades.*.grade_date' => 'required|date',
+            'grades.*.comments' => 'nullable',
+        ]);
+
+        $grades = $request->input('grades');
+        $class_id = (int)$request->input('class_id');
+
+        try {
+            foreach ($grades as $gradeData) {
+                $data = [
+                    'student_id' => (int)$gradeData['student_id'],
+                    'class_id' => (int)$gradeData['class_id'],
+                    'lesson_id' => (int)$gradeData['lesson_id'],
+                    'teacher_id' => (int)$_SESSION['user']['id'],
+                    'grade_value' => (float)$gradeData['grade_value'],
+                    'grade_date' => $gradeData['grade_date'],
+                    'comments' => $gradeData['comments'] ?? null,
+                ];
+                Grade::update((int)$gradeData['id'], $data);
+            }
+            Session::flash('success', 'Grades updated successfully.');
+            redirect('/grades?class_id=' . $class_id);
+        } catch (\Exception $e) {
+            error_log('GradeController: Failed to bulk update grades: ' . $e->getMessage());
+            Session::flash('error', 'Failed to update grades. Please try again.');
+            redirect('/grades?class_id=' . $class_id);
         }
     }
 }

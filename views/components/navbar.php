@@ -4,26 +4,21 @@
             <ul class="flex space-x-8 pt-3">
                 <li>
                     <a href="/" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                        Home
+                        Sākums
                     </a>
                 </li>
                 <?php if (auth()): ?>
                     <li>
                         <a href="/diary" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                            Diary
+                            Dienasgrāmata
                         </a>
                     </li>
                     <li>
                         <a href="/mail" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                            Mail
+                            Pasts
                         </a>
                     </li>
                 <?php endif; ?>
-                <li>
-                    <a href="/news" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                        News
-                    </a>
-                </li>
                                 <li>
                     <a href="/grades" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
                         Atzimes
