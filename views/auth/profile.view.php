@@ -20,7 +20,7 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <h2 class="text-2xl font-bold"><?= htmlspecialchars($_SESSION['user']['username'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <h2 class="text-2xl font-bold"><?= htmlspecialchars($_SESSION['user']['first_name'], ENT_QUOTES, 'UTF-8') ?></h2>
             <p class="text-gray-300 mb-1"><?= htmlspecialchars($_SESSION['user']['email'], ENT_QUOTES, 'UTF-8') ?></p>
             <a href="/logout"
                class="mt-6 inline-block px-5 py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg transition">
@@ -48,9 +48,9 @@
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Edit Profile Info</h3>
                 <form action="/profile/update" method="POST" class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium text-gray-600">Username</label>
+                        <label for="username" class="block text-sm font-medium text-gray-600">first_name</label>
                         <input type="text" name="username" id="username"
-                               value="<?= htmlspecialchars($_SESSION['user']['username'], ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= htmlspecialchars($_SESSION['user']['first_name'], ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
                     <div>

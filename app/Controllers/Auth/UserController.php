@@ -35,20 +35,20 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'username' => 'required',
+            'first_name' => 'required',
+            'last_name' => 'required',
             'email' => 'required|email|unique:user,email',
             'password' => 'required|min:6',
         ]);
 
-        $username = request('username');
-        $email = request('email');
-        $password = hash_make(request('password'));
         $first_name = request('first_name');
         $last_name = request('last_name');
+        $email = request('email');
+        $password = hash_make(request('password'));
         $role = 'student';
 
         try {
-            User::create(compact('username', 'email', 'password', 'role'));
+            User::create(compact('first_name', 'last_name', 'email', 'password', 'role'));
         } catch (\Exception $e) {
             Session::flash('error', 'Registration failed. Please try again.');
             redirect('/register');

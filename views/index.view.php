@@ -1,6 +1,6 @@
 <?php component('header'); ?>
 
-<div class="min-h-screen bg-gradient-to-br from-teal-100 via-white to-teal-50 flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
+<div class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
     <!-- Background image with overlay filter -->
     <div class="absolute inset-0 bg-cover bg-center bg-opacity-20" style="background-image: url('https://www.example.com/your-image.jpg');"></div>
 

@@ -37,7 +37,7 @@ class SessionController extends Controller
         $user = User::where('email', '=', $email)->get();
 
         if (! $user || ! password_verify($password, $user['password'])) {
-            Session::flash('errors', ['password' => 'Invalid username or password']);
+            Session::flash('errors', ['password' => 'Invalid email or password']);
             Session::put('old', ['email' => $email]);
             redirect('/login');
         }
