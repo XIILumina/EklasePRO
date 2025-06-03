@@ -47,12 +47,12 @@
                     <?php endif; ?>
                     <ul class="flex space-x-4 pt-3">
                         <li>
-                            <a href="/logout" class="inline-flex bg-gradient-to-br from-gray-400 to-red-500 rounded-l-3xl px-8 items-center py-2 text-sm font-bold text-gray-100 hover:to-blue-500 hover:from-red-600 transition hover:scale-105 duration-400">
+                            <a href="/logout" class="inline-flex bg-gradient-to-br from-gray-500 to-red-500 rounded-l-3xl px-8 items-center py-2 text-sm font-bold text-gray-100 hover:to-gray-500 hover:from-red-600 transition hover:scale-105 duration-400">
                                 Logout
                             </a>
                         </li>
                         <li>
-                            <a href="/profile" class="inline-flex items-center px-6 py-2 text-sm font-bold rounded-r-3xl text-gray-700 hover:text-red-600 transition-all duration-400 border hover:scale-105 border-dashed">
+                            <a href="/profile" class="inline-flex items-center px-6 py-2 text-sm font-bold rounded-r-3xl text-red-700 hover:text-red-500 transition-all duration-400 border hover:scale-105 border-dashed">
                                 Profile
                             </a>
                         </li>

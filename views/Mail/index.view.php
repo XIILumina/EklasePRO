@@ -3,85 +3,56 @@
 component('header');
 ?>
 
-<div class="min-h-screen bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 py-8">
-    <div class="container mx-auto px-4">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6"><?php echo htmlspecialchars($title); ?></h1>
-
+<div class="min-h-screen bg-black text-white py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <h1 class="text-3xl font-bold text-red-400 mb-6"><?php echo htmlspecialchars($title); ?></h1>
 
         <div class="mb-6">
-            <a href="/mail/create" class="py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md transition duration-200">
+            <a href="/mail/create" class="py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-200">
                 Compose Mail
             </a>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Inbox</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="p-4">From</th>
-                            <th class="p-4">Subject</th>
-                            <th class="p-4">Date</th>
-                            <th class="p-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($inbox)): ?>
-                            <tr>
-                                <td colspan="4" class="p-4 text-center text-gray-500">No messages in inbox.</td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($inbox as $mail): ?>
-                                <tr class="border-t">
-                                    <td class="p-4"><?php echo htmlspecialchars($mail['first_name'] . ' ' . $mail['last_name']); ?></td>
-                                    <td class="p-4">
-                                        <a href="/mail/<?php echo $mail['id']; ?>" class="text-blue-500 hover:underline">
-                                            <?php echo htmlspecialchars($mail['subject']); ?>
-                                        </a>
-                                    </td>
-                                    <td class="p-4"><?php echo htmlspecialchars($mail['sent_at']); ?></td>
-                                    <td class="p-4"><?php echo $mail['is_read'] ? 'Read' : 'Unread'; ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <div class="bg-gray-900 rounded-2xl shadow-xl p-6">
+            <h2 class="text-xl font-semibold text-red-300 mb-4">Mailbox</h2>
 
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Sent</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="p-4">To</th>
-                            <th class="p-4">Subject</th>
-                            <th class="p-4">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($sent)): ?>
-                            <tr>
-                                <td colspan="3" class="p-4 text-center text-gray-500">No sent messages.</td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($sent as $mail): ?>
-                                <tr class="border-t">
-                                    <td class="p-4"><?php echo htmlspecialchars($mail['first_name'] . ' ' . $mail['last_name']); ?></td>
-                                    <td class="p-4">
-                                        <a href="/mail/<?php echo $mail['id']; ?>" class="text-blue-500 hover:underline">
-                                            <?php echo htmlspecialchars($mail['subject']); ?>
-                                        </a>
-                                    </td>
-                                    <td class="p-4"><?php echo htmlspecialchars($mail['sent_at']); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            // Merge and sort all mails by date (newest first)
+            $allMail = array_merge(
+                array_map(fn($m) => $m + ['direction' => 'inbox'], $inbox),
+                array_map(fn($m) => $m + ['direction' => 'sent'], $sent)
+            );
+            usort($allMail, fn($a, $b) => strtotime($b['sent_at']) <=> strtotime($a['sent_at']));
+            ?>
+
+            <?php if (empty($allMail)): ?>
+                <p class="text-gray-400 text-center">No messages yet.</p>
+            <?php else: ?>
+                <ul class="space-y-4">
+                    <?php foreach ($allMail as $mail): ?>
+                        <li class="rounded-xl p-4 shadow-md <?php echo $mail['direction'] === 'sent' ? 'bg-red-800/30 text-right' : 'bg-gray-800/40'; ?>">
+                            <div class="text-sm text-gray-400 mb-1">
+                                <?php if ($mail['direction'] === 'sent'): ?>
+                                    You → <?php echo htmlspecialchars($mail['first_name'] . ' ' . $mail['last_name']); ?>
+                                <?php else: ?>
+                                    <?php echo htmlspecialchars($mail['first_name'] . ' ' . $mail['last_name']); ?> → You
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-lg font-semibold text-red-300">
+                                <a href="/mail/<?php echo $mail['id']; ?>" class="hover:underline">
+                                    <?php echo htmlspecialchars($mail['subject']); ?>
+                                </a>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <?php echo date("Y-m-d H:i", strtotime($mail['sent_at'])); ?>
+                                <?php if ($mail['direction'] === 'inbox'): ?>
+                                    · <?php echo $mail['is_read'] ? 'Read' : 'Unread'; ?>
+                                <?php endif; ?>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
     </div>
 </div>

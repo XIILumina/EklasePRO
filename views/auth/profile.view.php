@@ -1,5 +1,5 @@
 <?php component('header'); ?>
-
+<div class="bg-gray-950">
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -68,6 +68,8 @@
         </div>
 
     </div>
+</div>
+
 </div>
 
 <?php component('footer'); ?>

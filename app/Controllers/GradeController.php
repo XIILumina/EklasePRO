@@ -33,6 +33,7 @@ class GradeController extends Controller
         
         $params = [];
         $conditions = [];
+        
 
         if ($user_role === 'student') {
             $conditions[] = "g.student_id = ?";
@@ -54,6 +55,22 @@ class GradeController extends Controller
 
         try {
             $grades = Grade::query($query, $params)->getAll();
+            $lessonGrades = [];
+            $monthsSet = [];
+
+            foreach ($grades as $grade) {
+                $lesson = $grade['lesson_name'];
+                $month = date('F', strtotime($grade['grade_date'])); // e.g., "January"
+
+                $lessonGrades[$lesson][$month][] = $grade['grade_value'];
+                $monthsSet[$month] = true;
+            }
+
+            // Sort months
+            $sortedMonths = array_keys($monthsSet);
+            usort($sortedMonths, function ($a, $b) {
+                return date('n', strtotime("1 $a")) - date('n', strtotime("1 $b"));
+            });
             $classes = $user_role !== 'student' ? ClassModel::all()->getAll() : [];
         } catch (\Exception $e) {
             error_log('GradeController: Failed to load grades: ' . $e->getMessage());
@@ -66,6 +83,8 @@ class GradeController extends Controller
             'grades' => $grades,
             'classes' => $classes,
             'class_id' => $class_id,
+            'lessonGrades' => $lessonGrades,
+            'sortedMonths' => $sortedMonths,
         ]);
     }
 

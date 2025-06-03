@@ -26,7 +26,7 @@ class DiaryController extends Controller
         $class_id = $request->input('class_id') ? (int)$request->input('class_id') : null;
         $start_date = $request->input('week') ?: date('Y-m-d');
 
-        if ($user_role === 'student') {
+            if ($user_role === 'student') {
             $class = ClassModel::query(
                 "SELECT class_id FROM class_students WHERE user_id = ?",
                 [$user_id]
@@ -34,7 +34,6 @@ class DiaryController extends Controller
             $class_id = $class ? $class['class_id'] : null;
             if (!$class_id) {
                 error_log("DiaryController: Student ID $user_id has no class assigned");
-                Session::flash('error', 'You are not assigned to any class.');
                 redirect('/dashboard');
             }
         } elseif (!$class_id) {
