@@ -9,6 +9,7 @@ CREATE TABLE users (
     role ENUM('student', 'teacher', 'admin') NOT NULL DEFAULT 'student',
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
+    image VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

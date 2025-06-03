@@ -1,4 +1,5 @@
-<?php
+<?php 
+
 namespace Core;
 
 class FileUpload
@@ -40,8 +41,8 @@ class FileUpload
     }
 
     /**
-     *    Get the file extension.
-     *    @return string
+     * Get the file extension.
+     * @return string
      */
     public function parseExtension(): ?string
     {
@@ -52,8 +53,8 @@ class FileUpload
                 $ext_values = explode('.', $value);
                 $ext_values = end($ext_values);
                 $ext[]      = '.' . $ext_values;
-            }
-        } else {
+        return $ext;
+    } } else {
             $ext = explode('.', $this->name);
             $ext = '.' . end($ext);
         }
@@ -62,10 +63,9 @@ class FileUpload
     }
 
     /**
-     *    Generate random string.
-     *
-     *    @param integer $length
-     *    @return string
+     * Generate random string.
+     * @param integer $length
+     * @return string
      */
     public function randomString(int $length = 10)
     {
@@ -80,6 +80,7 @@ class FileUpload
 
         return $random;
     }
+
     /**
      * @return void
      * @param mixed $fileError
@@ -90,6 +91,7 @@ class FileUpload
             $this->uploadErrors[] = $this->filesErrorMessages[$fileError];
         }
     }
+
     /**
      * @return void
      * @param mixed $errorMessage
@@ -100,13 +102,14 @@ class FileUpload
     }
 
     /**
-     *    Move uploaded files.
+     * Move uploaded files.
      * @return void
      */
     public function move(): void
     {
-        if (! is_dir(BASE_PATH . "/public/storage/" . $this->path)) {
-            mkdir(BASE_PATH . "/public/storage/" . $this->path);
+        $uploadDir = BASE_PATH . "/public/storage/" . $this->path;
+        if (! is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
         }
 
         if (is_array($this->name)) {
@@ -123,8 +126,7 @@ class FileUpload
 
                 $this->checkFilesErrors($this->error[$file]);
 
-                if (move_uploaded_file($tmp, $this->path . $name)) {
-                } else {
+                if (!move_uploaded_file($tmp, $this->path . $name)) {
                     $this->error("Something went wrong. this file '{$this->name[$file]}' has not been uploaded");
                 }
             }
@@ -140,12 +142,14 @@ class FileUpload
 
             $this->checkFilesErrors($this->error);
 
-            move_uploaded_file($this->tmp, BASE_PATH . "/public/storage/" . $this->path . $name);
+            if (!move_uploaded_file($this->tmp, BASE_PATH . "/public/storage/" . $this->path . $name)) {
+                $this->error("Failed to move uploaded file.");
+            }
         }
     }
 
     /**
-     *    Get the file name.
+     * Get the file name.
      */
     public function getName()
     {
@@ -153,7 +157,7 @@ class FileUpload
     }
 
     /**
-     *    Get the file size.
+     * Get the file size.
      */
     public function getSize()
     {
@@ -161,7 +165,7 @@ class FileUpload
     }
 
     /**
-     *    Get the file type.
+     * Get the file type.
      */
     public function getType()
     {
@@ -169,7 +173,7 @@ class FileUpload
     }
 
     /**
-     *    Get the tmp name.
+     * Get the tmp name.
      */
     public function getTmp()
     {
@@ -177,7 +181,7 @@ class FileUpload
     }
 
     /**
-     *    Get the file error.
+     * Get the file error.
      */
     public function getError()
     {
@@ -185,7 +189,7 @@ class FileUpload
     }
 
     /**
-     *    Get the file extension.
+     * Get the file extension.
      */
     public function getExtension()
     {
@@ -193,7 +197,7 @@ class FileUpload
     }
 
     /**
-     *    Check if there is no errors.
+     * Check if there is no errors.
      * @return bool
      */
     public function success()
@@ -206,7 +210,7 @@ class FileUpload
     }
 
     /**
-     *    Display the upload errors.
+     * Display the upload errors.
      */
     public function displayUploadErrors()
     {
