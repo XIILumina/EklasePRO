@@ -36,7 +36,14 @@ CREATE TABLE lessons (
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+-- its optional but it might be needed if the fetching of lessons doesnt work right
+-- CREATE TABLE user_lessons(
+--     id INT PRIMARY KEY AUTO_INCREMENT,
+--     user_id INT NOT NULL,
+--     lesson_id INT NOT NULL,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+-- )
 -- Class-Lesson-Teacher assignment table (assign teachers to lessons for specific classes)
 CREATE TABLE class_lesson_teachers (
     class_id INT,

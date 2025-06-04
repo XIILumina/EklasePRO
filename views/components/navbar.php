@@ -1,13 +1,13 @@
 <?php
 // File: header.php (or wherever the navbar is defined)
 ?>
-<div class="bg-gradient-to-br from-gray-800 to-gray-700 text-white shadow-lg">
+<div class="bg-gradient-to-br from-black via-red-950 to-black text-white shadow-lg border-b border-red-800">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <ul class="flex space-x-8 pt-3">
                     <li>
-                        <a href="/" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white hover:text-red-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                        <a href="/" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white hover:text-red-600 hover:border-b-2 hover:border-red-600 transition-all duration-150">
                             Sākums
                         </a>
                     </li>
@@ -20,8 +20,13 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="/classes/create" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                                    Create Class
+                                <a href="/lessons" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Lessons
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/students" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Users
                                 </a>
                             </li>
                         <?php elseif ($role === 'teacher'): ?>
@@ -100,4 +105,3 @@
         </div>
     </div>
 </div>
-<?php var_dump($role); ?>

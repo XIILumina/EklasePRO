@@ -50,7 +50,7 @@ class ClassController extends Controller
             redirect('/dashboard');
         }
 
-        view('classes/index', [
+        view('admin/classes/index', [
             'title' => 'Classes',
             'classes' => $classes,
         ]);
@@ -62,7 +62,7 @@ class ClassController extends Controller
             redirect('/login');
         }
 
-        view('classes/create', ['title' => 'Create Class']);
+        view('admin/classes/create', ['title' => 'Create Class']);
     }
 
     public function store(Request $request): void
@@ -106,7 +106,7 @@ class ClassController extends Controller
             redirect('/classes');
         }
 
-        view('classes/edit', [
+        view('admin/classes/edit', [
             'title' => 'Edit Class',
             'class' => $class,
         ]);

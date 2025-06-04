@@ -1,5 +1,4 @@
 <?php
-
 use App\Controllers\Auth\SessionController;
 use App\Controllers\Auth\UserController;
 use App\Controllers\DiaryController;
@@ -8,6 +7,7 @@ use App\Controllers\GradeController;
 use App\Controllers\ClassController;
 use App\Controllers\MailController;
 use App\Controllers\DetentionController;
+use App\Controllers\LessonController;
 
 global $router;
 
@@ -32,16 +32,17 @@ $router->get('/diary/create', [DiaryController::class, 'create']);
 $router->post('/diary/store', [DiaryController::class, 'store']);
 $router->get('/diary/{id}/edit', [DiaryController::class, 'edit']);
 $router->post('/diary/{id}/update', [DiaryController::class, 'update']);
+$router->get('/daily-lessons', [DiaryController::class, 'dailyLessons']);
 
 $router->get('/grades', [GradeController::class, 'index']);
 $router->get('/grades/create', [GradeController::class, 'create']);
 $router->post('/grades/store', [GradeController::class, 'store']);
-$router->get('/grades/{id}/edit', [GradeController::class, 'edit']);
+$router->get('/grades/edit', [GradeController::class, 'edit']); // Updated for matrix edit
 $router->post('/grades/{id}/update', [GradeController::class, 'update']);
 $router->get('/grades/{id}/delete', [GradeController::class, 'delete']);
 $router->post('/grades/bulk-update', [GradeController::class, 'bulkUpdate']);
-$router->get('/view-grades', [GradeController::class, 'viewGrades']);
-$router->get('/filter-students', [GradeController::class, 'filterStudents']);
+$router->get('/detentions/create', [GradeController::class, 'createDetention']);
+$router->post('/detentions/store', [GradeController::class, 'storeDetention']);
 
 $router->get('/classes', [ClassController::class, 'index']);
 $router->get('/classes/create', [ClassController::class, 'create']);
@@ -53,6 +54,13 @@ $router->get('/classes/{id}/add-students', [ClassController::class, 'addStudents
 $router->post('/classes/{id}/store-students', [ClassController::class, 'storeStudents']);
 $router->post('/classes/{id}/remove-student', [ClassController::class, 'removeStudent']);
 
+$router->get('/lessons', [LessonController::class, 'index']);
+$router->get('/lessons/create', [LessonController::class, 'create']);
+$router->post('/lessons/store', [LessonController::class, 'store']);
+$router->get('/lessons/{id}/edit', [LessonController::class, 'edit']);
+$router->post('/lessons/{id}/update', [LessonController::class, 'update']);
+$router->post('/lessons/{id}/delete', [LessonController::class, 'delete']);
+
 $router->get('/mail', [MailController::class, 'index']);
 $router->get('/mail/create', [MailController::class, 'create']);
 $router->post('/mail/store', [MailController::class, 'store']);
@@ -61,4 +69,3 @@ $router->get('/mail/{id}', [MailController::class, 'show']);
 $router->get('/detentions', [DetentionController::class, 'index']);
 $router->get('/detentions/create', [DetentionController::class, 'create']);
 $router->post('/detentions/store', [DetentionController::class, 'store']);
-?>

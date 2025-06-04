@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers;
 
 use App\Models\Diary;
@@ -26,7 +25,7 @@ class DiaryController extends Controller
         $class_id = $request->input('class_id') ? (int)$request->input('class_id') : null;
         $start_date = $request->input('week') ?: date('Y-m-d');
 
-            if ($user_role === 'student') {
+        if ($user_role === 'student') {
             $class = ClassModel::query(
                 "SELECT class_id FROM class_students WHERE user_id = ?",
                 [$user_id]
@@ -38,13 +37,18 @@ class DiaryController extends Controller
             }
         } elseif (!$class_id) {
             try {
-                $classes = ClassModel::all()->getAll();
+                $classes = ClassModel::query(
+                    $user_role === 'teacher' ?
+                        "SELECT DISTINCT c.* FROM classes c JOIN class_lesson_teachers clt ON c.id = clt.class_id WHERE clt.teacher_id = ?" :
+                        "SELECT * FROM classes",
+                    $user_role === 'teacher' ? [$user_id] : []
+                )->getAll();
             } catch (\Exception $e) {
                 error_log('DiaryController: Failed to load classes: ' . $e->getMessage());
                 Session::flash('error', 'Failed to load classes. Please try again.');
                 redirect('/dashboard');
             }
-            view('diaries/select_class', [
+            view($user_role . '/diaries/select_class', [
                 'title' => 'Select Class',
                 'classes' => $classes,
             ]);
@@ -60,13 +64,47 @@ class DiaryController extends Controller
             redirect('/dashboard');
         }
 
-        view('diaries/index', [
+        view($user_role . '/diaries/index', [
             'title' => 'Weekly Diary',
             'diary' => $diary,
             'time_slots' => $time_slots,
             'class_id' => $class_id,
             'start_date' => (new \DateTime($start_date))->format('Y-m-d'),
+            'user_role' => $user_role,
         ]);
+    }
+
+    public function dailyLessons(Request $request): void
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'teacher') {
+            redirect('/login');
+        }
+
+        $user_id = (int)$_SESSION['user']['id'];
+        $date = $request->input('date') ?: date('Y-m-d');
+
+        try {
+            $lessons = Diary::query(
+                "SELECT d.*, c.class_name, l.lesson_name, t.start, t.end
+                 FROM diaries d
+                 JOIN classes c ON d.class_id = c.id
+                 JOIN lessons l ON d.lesson_id = l.id
+                 JOIN time_slots t ON d.slot_number = t.slot_number
+                 WHERE d.teacher_id = ? AND d.diary_date = ?
+                 ORDER BY t.start",
+                [$user_id, $date]
+            )->getAll();
+
+            view('teacher/diaries/daily', [
+                'title' => 'Daily Lessons',
+                'lessons' => $lessons,
+                'date' => $date,
+            ]);
+        } catch (\Exception $e) {
+            error_log('DiaryController: Failed to load daily lessons: ' . $e->getMessage());
+            Session::flash('error', 'Failed to load daily lessons. Please try again.');
+            redirect('/dashboard');
+        }
     }
 
     public function create(Request $request): void
@@ -90,7 +128,7 @@ class DiaryController extends Controller
             redirect('/diaries');
         }
 
-        view('diaries/create', [
+        view('admin/diaries/create', [
             'title' => 'Add Diary Entry',
             'class_id' => $class_id,
             'diary_date' => $diary_date,
@@ -181,7 +219,7 @@ class DiaryController extends Controller
             redirect('/diaries');
         }
 
-        view('diaries/edit', [
+        view('admin/diaries/edit', [
             'title' => 'Edit Diary Entry',
             'diary' => $diary,
             'classes' => $classes,
@@ -231,11 +269,12 @@ class DiaryController extends Controller
             Mail::send($teacher['email'], 'Lesson Schedule Updated', $body);
 
             Session::flash('success', 'Diary entry updated successfully.');
-            redirect('/diaries?class_id=' . $data['class_id'] . '&week=' . $data['diary_date']);
+            redirect('/student/diaries?class_id=' . $data['class_id'] . '&week=' . $data['diary_date']);
         } catch (\Exception $e) {
             error_log('DiaryController: Failed to update diary entry: ' . $e->getMessage());
             Session::flash('error', 'Failed to update diary entry. Please try again.');
-            redirect('/diaries/' . $id . '/edit');
+            redirect('/student/diaries/' . $id . '/edit');
         }
     }
 }
+?>
