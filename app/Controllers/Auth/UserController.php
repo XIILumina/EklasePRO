@@ -127,7 +127,7 @@ class UserController extends Controller
         }
 
         $request->validate([
-            'username' => 'required',
+            'first_name' => 'required',
             'email' => 'required|email'
         ]);
 
@@ -140,15 +140,15 @@ class UserController extends Controller
         }
 
         $id = (int) $user['id'];
-        $newUsername = request('username');
+        $newfirstname = request('first_name');
         $newEmail = request('email');
 
         User::update($id, [
-            'username' => $newUsername,
+            'first_name' => $newfirstname,
             'email' => $newEmail
         ]);
 
-        $_SESSION['user']['username'] = $newUsername;
+        $_SESSION['user']['first_name'] = $newfirstname;
         $_SESSION['user']['email'] = $newEmail;
 
         Session::flash('success', 'Profile updated successfully.');

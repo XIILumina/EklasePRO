@@ -1,5 +1,8 @@
+<?php
+// File: header.php (or wherever the navbar is defined)
+?>
 <div class="bg-gradient-to-br from-gray-800 to-gray-700 text-white shadow-lg">
-    <div class="max-w-7xl mx-auto  sm:px-6 lg:px-8 ">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <ul class="flex space-x-8 pt-3">
@@ -9,22 +12,57 @@
                         </a>
                     </li>
                     <?php if (auth()): ?>
-                        <li>
-                            <a href="/diary" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                                Dienasgrāmata
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/mail" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                                Pasts
-                            </a>
-                        </li>
+                        <?php $role = $_SESSION['user']['role'];  ?>
+                        <?php if ($role === 'admin'): ?>
+                            <li>
+                                <a href="/classes" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Classes
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/classes/create" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Create Class
+                                </a>
+                            </li>
+                        <?php elseif ($role === 'teacher'): ?>
+                            <li>
+                                <a href="/teacher/classes" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    My Classes
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/grades" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Manage Grades
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/detentions/create" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Assign Detentions
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/mail" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Mail
+                                </a>
+                            </li>
+                        <?php elseif ($role === 'student'): ?>
+                            <li>
+                                <a href="/grades" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    My Grades
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/diary" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    My Diary
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/mail" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
+                                    Mail
+                                </a>
+                            </li>
+                        <?php endif; ?>
                     <?php endif; ?>
-                                    <li>
-                        <a href="/grades" class="inline-flex items-center px-3 py-2 text-sm font-medium hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-150">
-                            Atzimes
-                        </a>
-                    </li>
                 </ul>
             </div>
             <div class="flex">
@@ -62,3 +100,4 @@
         </div>
     </div>
 </div>
+<?php var_dump($role); ?>

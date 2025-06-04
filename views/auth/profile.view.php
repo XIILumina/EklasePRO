@@ -1,5 +1,6 @@
 <?php component('header'); ?>
-<div class="bg-gray-950">
+<div class="bg-gray">
+
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -48,8 +49,8 @@
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Edit Profile Info</h3>
                 <form action="/profile/update" method="POST" class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium text-gray-600">first_name</label>
-                        <input type="text" name="username" id="username"
+                        <label for="first_name" class="block text-sm font-medium text-gray-600">first_name</label>
+                        <input type="text" name="first_name" id="first_name"
                                value="<?= htmlspecialchars($_SESSION['user']['first_name'], ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
@@ -68,8 +69,6 @@
         </div>
 
     </div>
-</div>
-
 </div>
 
 <?php component('footer'); ?>

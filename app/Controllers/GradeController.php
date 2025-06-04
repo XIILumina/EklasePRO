@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Controllers;
 
 use App\Models\Grade;
+use App\Models\Detention;
 use App\Models\ClassModel;
 use App\Models\Lesson;
 use App\Models\User;
@@ -33,12 +33,14 @@ class GradeController extends Controller
         
         $params = [];
         $conditions = [];
-        
 
         if ($user_role === 'student') {
             $conditions[] = "g.student_id = ?";
             $params[] = $user_id;
-        } else {
+        } elseif ($user_role === 'teacher') {
+            $conditions[] = "g.teacher_id = ?";
+            $params[] = $user_id;
+        } elseif ($user_role === 'admin') {
             if ($class_id) {
                 $conditions[] = "g.class_id = ?";
                 $params[] = $class_id;
@@ -60,13 +62,17 @@ class GradeController extends Controller
 
             foreach ($grades as $grade) {
                 $lesson = $grade['lesson_name'];
-                $month = date('F', strtotime($grade['grade_date'])); // e.g., "January"
-
+                $month = date('F', strtotime($grade['grade_date']));
                 $lessonGrades[$lesson][$month][] = $grade['grade_value'];
                 $monthsSet[$month] = true;
             }
-
-            // Sort months
+                $detentions = Detention::query(
+                    "SELECT d.*, t.first_name AS teacher_first_name, t.last_name AS teacher_last_name 
+                    FROM detentions d 
+                    JOIN users t ON d.teacher_id = t.id 
+                    WHERE d.student_id = ?",
+                    [$_SESSION['user']['id']]
+                )->getAll();
             $sortedMonths = array_keys($monthsSet);
             usort($sortedMonths, function ($a, $b) {
                 return date('n', strtotime("1 $a")) - date('n', strtotime("1 $b"));
@@ -85,6 +91,9 @@ class GradeController extends Controller
             'class_id' => $class_id,
             'lessonGrades' => $lessonGrades,
             'sortedMonths' => $sortedMonths,
+            'user_role' => $user_role,
+            'detentions' => $detentions,
+            'student_id' => $student_id,
         ]);
     }
 
@@ -133,15 +142,27 @@ class GradeController extends Controller
             'comments' => 'nullable',
         ]);
 
+        $user_id = (int)$_SESSION['user']['id'];
         $data = [
             'student_id' => (int)$request->input('student_id'),
             'class_id' => (int)$request->input('class_id'),
             'lesson_id' => (int)$request->input('lesson_id'),
-            'teacher_id' => (int)$_SESSION['user']['id'],
+            'teacher_id' => $user_id,
             'grade_value' => (float)$request->input('grade_value'),
             'grade_date' => $request->input('grade_date'),
             'comments' => $request->input('comments'),
         ];
+
+        if ($_SESSION['user']['role'] === 'teacher') {
+            $assignment = ClassModel::query(
+                "SELECT * FROM class_lesson_teachers WHERE class_id = ? AND lesson_id = ? AND teacher_id = ?",
+                [$data['class_id'], $data['lesson_id'], $user_id]
+            )->get();
+            if (!$assignment) {
+                Session::flash('error', 'You are not assigned to teach this lesson in this class.');
+                redirect('/grades');
+            }
+        }
 
         try {
             Grade::create($data);
@@ -282,8 +303,15 @@ class GradeController extends Controller
 
     public function bulkUpdate(Request $request): void
     {
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+        if (!isset($_SESSION['user'])) {
             redirect('/login');
+        }
+        $user_role = $_SESSION['user']['role'];
+        $user_id = (int)$_SESSION['user']['id'];
+
+        if ($user_role !== 'admin' && $user_role !== 'teacher') {
+            Session::flash('error', 'Unauthorized');
+            redirect('/grades');
         }
 
         $request->validate([
@@ -299,6 +327,13 @@ class GradeController extends Controller
 
         try {
             foreach ($grades as $gradeData) {
+                $grade_id = (int)$gradeData['id'];
+                if ($user_role === 'teacher') {
+                    $existing_grade = Grade::find($grade_id)->get();
+                    if (!$existing_grade || $existing_grade['teacher_id'] != $user_id) {
+                        continue;
+                    }
+                }
                 $data = [
                     'student_id' => (int)$gradeData['student_id'],
                     'class_id' => (int)$gradeData['class_id'],
@@ -308,7 +343,7 @@ class GradeController extends Controller
                     'grade_date' => $gradeData['grade_date'],
                     'comments' => $gradeData['comments'] ?? null,
                 ];
-                Grade::update((int)$gradeData['id'], $data);
+                Grade::update($grade_id, $data);
             }
             Session::flash('success', 'Grades updated successfully.');
             redirect('/grades?class_id=' . $class_id);
@@ -319,3 +354,4 @@ class GradeController extends Controller
         }
     }
 }
+?>

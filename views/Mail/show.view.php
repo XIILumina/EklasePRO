@@ -1,6 +1,4 @@
-<?php
-component('header');
-?>
+<?php component('header'); ?>
 
 <div class="min-h-screen bg-black text-white py-8">
     <div class="container mx-auto px-4 max-w-2xl">
@@ -20,10 +18,15 @@ component('header');
             </div>
         </div>
 
-        <div class="mt-6">
+        <div class="mt-6 flex space-x-4">
             <a href="/mail" class="py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-200">
                 Back to Mailbox
             </a>
+            <?php if ($mail['receiver_id'] == $_SESSION['user']['id']): ?>
+                <a href="/mail/create?reply_to=<?php echo $mail['id']; ?>" class="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200">
+                    Reply
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 </div>
