@@ -28,5 +28,5 @@ try {
         return redirect($router->previousUrl());
     }
 }
-
+error_log("Request Method: $method, URI: $uri");
 Session::unflash();

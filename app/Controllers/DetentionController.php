@@ -48,7 +48,7 @@ class DetentionController extends Controller
             redirect('/detentions');
         }
 
-        view('detentions/index', [
+        view('public/detentions/index', [
             'title' => 'Detentions',
             'detentions' => $detentions,
         ]);
@@ -74,7 +74,7 @@ class DetentionController extends Controller
             redirect('/detentions');
         }
 
-        view('detentions/create', [
+        view('public/detentions/create', [
             'title' => 'Assign Detention',
             'students' => $students,
             'classes' => $classes,

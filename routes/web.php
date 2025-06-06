@@ -8,6 +8,7 @@ use App\Controllers\ClassController;
 use App\Controllers\MailController;
 use App\Controllers\DetentionController;
 use App\Controllers\LessonController;
+use App\Controllers\TeacherController;
 
 global $router;
 
@@ -44,15 +45,15 @@ $router->post('/grades/bulk-update', [GradeController::class, 'bulkUpdate']);
 $router->get('/detentions/create', [GradeController::class, 'createDetention']);
 $router->post('/detentions/store', [GradeController::class, 'storeDetention']);
 
-$router->get('/classes', [ClassController::class, 'index']);
-$router->get('/classes/create', [ClassController::class, 'create']);
-$router->post('/classes/store', [ClassController::class, 'store']);
-$router->get('/classes/{id}/edit', [ClassController::class, 'edit']);
-$router->post('/classes/{id}/update', [ClassController::class, 'update']);
-$router->post('/classes/{id}/delete', [ClassController::class, 'delete']);
-$router->get('/classes/{id}/add-students', [ClassController::class, 'addStudents']);
-$router->post('/classes/{id}/store-students', [ClassController::class, 'storeStudents']);
-$router->post('/classes/{id}/remove-student', [ClassController::class, 'removeStudent']);
+$router->get('/classes', [App\Controllers\ClassController::class, 'index']);
+$router->get('/classes/create', [App\Controllers\ClassController::class, 'create']);
+$router->post('/classes/store', [App\Controllers\ClassController::class, 'store']);
+$router->get('/classes/{id}/edit', [App\Controllers\ClassController::class, 'edit']);
+$router->post('/classes/{id}/update', [App\Controllers\ClassController::class, 'update']);
+$router->get('/classes/{id}/delete', [App\Controllers\ClassController::class, 'delete']);
+$router->get('/classes/{id}/add-students', [App\Controllers\ClassController::class, 'addStudents']);
+$router->post('/classes/{id}/store-students', [App\Controllers\ClassController::class, 'storeStudents']);
+$router->post('/classes/{id}/remove-student', [App\Controllers\ClassController::class, 'removeStudent']);
 
 $router->get('/lessons', [LessonController::class, 'index']);
 $router->get('/lessons/create', [LessonController::class, 'create']);
@@ -69,3 +70,5 @@ $router->get('/mail/{id}', [MailController::class, 'show']);
 $router->get('/detentions', [DetentionController::class, 'index']);
 $router->get('/detentions/create', [DetentionController::class, 'create']);
 $router->post('/detentions/store', [DetentionController::class, 'store']);
+
+

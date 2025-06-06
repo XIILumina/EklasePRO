@@ -48,7 +48,7 @@ class DiaryController extends Controller
                 Session::flash('error', 'Failed to load classes. Please try again.');
                 redirect('/dashboard');
             }
-            view($user_role . '/diaries/select_class', [
+            view( 'public/diaries/select_class', [
                 'title' => 'Select Class',
                 'classes' => $classes,
             ]);
@@ -64,7 +64,7 @@ class DiaryController extends Controller
             redirect('/dashboard');
         }
 
-        view($user_role . '/diaries/index', [
+        view( 'public/diaries/index', [
             'title' => 'Weekly Diary',
             'diary' => $diary,
             'time_slots' => $time_slots,
@@ -95,7 +95,7 @@ class DiaryController extends Controller
                 [$user_id, $date]
             )->getAll();
 
-            view('teacher/diaries/daily', [
+            view('public/diaries/daily', [
                 'title' => 'Daily Lessons',
                 'lessons' => $lessons,
                 'date' => $date,
@@ -128,7 +128,7 @@ class DiaryController extends Controller
             redirect('/diaries');
         }
 
-        view('admin/diaries/create', [
+        view('public/diaries/create', [
             'title' => 'Add Diary Entry',
             'class_id' => $class_id,
             'diary_date' => $diary_date,
@@ -219,7 +219,7 @@ class DiaryController extends Controller
             redirect('/diaries');
         }
 
-        view('admin/diaries/edit', [
+        view('public/diaries/edit', [
             'title' => 'Edit Diary Entry',
             'diary' => $diary,
             'classes' => $classes,

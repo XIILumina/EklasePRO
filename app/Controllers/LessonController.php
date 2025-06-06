@@ -37,7 +37,7 @@ class LessonController extends Controller
             redirect('/dashboard');
         }
 
-        view('admin/lessons/index', [
+        view('public/lessons/index', [
             'title' => 'Lessons',
             'lessons' => $lessons,
         ]);
@@ -58,7 +58,7 @@ class LessonController extends Controller
             redirect('/lessons');
         }
 
-        view('admin/lessons/create', [
+        view('public/lessons/create', [
             'title' => 'Create Lesson',
             'classes' => $classes,
             'teachers' => $teachers,
@@ -143,7 +143,7 @@ class LessonController extends Controller
             redirect('/lessons');
         }
 
-        view('admin/lessons/edit', [
+        view('public/lessons/edit', [
             'title' => 'Edit Lesson',
             'lesson' => $lesson,
             'classes' => $classes,

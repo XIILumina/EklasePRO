@@ -7,7 +7,7 @@ use App\Models\ClassModel;
 use Core\Request;
 use Core\Session;
 
-class MailController extends Controller
+class AdminController extends Controller
 {
     protected static string $model = 'Mail';
 

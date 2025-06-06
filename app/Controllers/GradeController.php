@@ -14,221 +14,239 @@ class GradeController extends Controller
 {
     protected static string $model = 'Grade';
 
-    public function index(Request $request): void
-    {
-        if (!isset($_SESSION['user'])) {
-            redirect('/login');
+public function index(Request $request): void
+{
+    if (!isset($_SESSION['user']) || !isset($_SESSION['user']['role']) || !isset($_SESSION['user']['id'])) {
+        error_log('GradeController: Invalid session data');
+        redirect('/logout');
+        return;
+    }
+
+    $user_role = $_SESSION['user']['role'];
+    $user_id = (int)$_SESSION['user']['id'];
+    $class_id = $request->input('class_id') ? (int)$request->input('class_id') : null;
+    $lesson_id = $request->input('lesson_id') ? (int)$request->input('lesson_id') : null;
+    $week_start = $request->input('week') ? $request->input('week') : date('Y-m-d', strtotime('monday this week'));
+
+    if ($user_role === 'student') {
+        // Check student enrollment
+        $enrollment = ClassModel::query(
+            "SELECT class_id FROM class_students WHERE user_id = ?",
+            [$user_id]
+        )->get();
+        if (!$enrollment) {
+            error_log("GradeController: Student ID $user_id is not enrolled in any class");
+            Session::flash('error', 'You are not enrolled in any classes.');
+            redirect('/dashboard');
+            return;
         }
 
-        $user_role = $_SESSION['user']['role'];
-        $user_id = (int)$_SESSION['user']['id'];
-        $class_id = $request->input('class_id') ? (int)$request->input('class_id') : null;
-        $lesson_id = $request->input('lesson_id') ? (int)$request->input('lesson_id') : null;
-        $week_start = $request->input('week') ? $request->input('week') : date('Y-m-d', strtotime('monday this week'));
+        $query = "
+            SELECT l.lesson_name, g.id AS grade_id, g.grade_value, g.grade_date, u.first_name, u.last_name, c.class_name
+            FROM lessons l
+            JOIN class_lesson_teachers clt ON l.id = clt.lesson_id
+            JOIN classes c ON clt.class_id = c.id
+            LEFT JOIN grades g ON l.id = g.lesson_id AND g.class_id = clt.class_id AND g.student_id = ?
+            JOIN class_students cs ON cs.class_id = clt.class_id
+            WHERE cs.user_id = ?
+        ";
+        $params = [$user_id, $user_id];
 
-        if ($user_role === 'student') {
-            // Student view (unchanged)
-            $query = "
-                SELECT l.lesson_name, g.id AS grade_id, g.grade_value, g.grade_date, u.first_name, u.last_name, c.class_name
-                FROM lessons l
-                JOIN class_lesson_teachers clt ON l.id = clt.lesson_id
-                JOIN classes c ON clt.class_id = c.id
-                LEFT JOIN grades g ON l.id = g.lesson_id AND g.class_id = clt.class_id AND g.student_id = ?
-                JOIN class_students cs ON cs.class_id = clt.class_id
-                WHERE cs.user_id = ?
-            ";
-            $params = [$user_id, $user_id];
-            $conditions = [];
+        try {
+            error_log("GradeController: Running grades query for user_id=$user_id");
+            $grades = Grade::query($query, $params)->getAll();
+            error_log("GradeController: Grades query returned " . count($grades) . " rows");
 
-            try {
-                $grades = Grade::query($query, $params)->getAll();
-                $lessonGrades = [];
-                $monthsSet = [];
+            error_log("GradeController: Running classLessons query for user_id=$user_id");
+            $classLessons = Lesson::query(
+                "SELECT DISTINCT l.lesson_name
+                 FROM lessons l
+                 JOIN class_lesson_teachers clt ON l.id = clt.lesson_id
+                 JOIN class_students cs ON cs.class_id = clt.class_id
+                 WHERE cs.user_id = ?",
+                [$user_id]
+            )->getAll();
+            error_log("GradeController: ClassLessons query returned " . count($classLessons) . " rows");
 
-                $classLessons = Lesson::query(
-                    "SELECT DISTINCT l.lesson_name
-                     FROM lessons l
-                     JOIN class_lesson_teachers clt ON l.id = clt.lesson_id
-                     JOIN class_students cs ON cs.class_id = clt.class_id
-                     WHERE cs.user_id = ?",
-                    [$user_id]
-                )->getAll();
+            $lessonGrades = [];
+            $monthsSet = [];
 
-                foreach ($classLessons as $lesson) {
-                    $lessonGrades[$lesson['lesson_name']] = array_fill_keys(
-                        ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'],
-                        []
-                    );
-                }
-
-                foreach ($grades as $grade) {
-                    $lesson = $grade['lesson_name'];
-                    if ($grade['grade_date']) {
-                        $month = date('F', strtotime($grade['grade_date']));
-                        $lessonGrades[$lesson][$month][] = $grade['grade_value'];
-                        $monthsSet[$month] = true;
-                    }
-                }
-
-                $detentions = Detention::query(
-                    "SELECT d.*, t.first_name AS teacher_first_name, t.last_name AS teacher_last_name 
-                     FROM detentions d 
-                     JOIN users t ON d.teacher_id = t.id 
-                     WHERE d.student_id = ?",
-                    [$user_id]
-                )->getAll();
-
-                $lessonGrades['Detention'] = array_fill_keys(
+            foreach ($classLessons as $lesson) {
+                $lessonGrades[$lesson['lesson_name']] = array_fill_keys(
                     ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'],
                     []
                 );
-                foreach ($detentions as $detention) {
-                    $month = date('F', strtotime($detention['detention_date']));
-                    $lessonGrades['Detention'][$month][] = $detention['reason'];
-                }
-
-                $sortedMonths = ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
-                $classes = [];
-
-                view('student/grades/index', [
-                    'title' => 'Grades',
-                    'grades' => $grades,
-                    'classes' => $classes,
-                    'class_id' => $class_id,
-                    'lessonGrades' => $lessonGrades,
-                    'sortedMonths' => $sortedMonths,
-                    'user_role' => $user_role,
-                    'detentions' => $detentions,
-                    'student_id' => $user_id,
-                ]);
-            } catch (\Exception $e) {
-                error_log('GradeController: Failed to load grades: ' . $e->getMessage());
-                Session::flash('error', 'Failed to load grades. Please try again.');
-                redirect('/grades');
-            }
-        } else {
-            // Teacher or Admin view
-            if (!$class_id) {
-                try {
-                    $classes = ClassModel::query(
-                        $user_role === 'teacher' ?
-                            "SELECT DISTINCT c.* FROM classes c JOIN class_lesson_teachers clt ON c.id = clt.class_id WHERE clt.teacher_id = ?" :
-                            "SELECT * FROM classes",
-                        $user_role === 'teacher' ? [$user_id] : []
-                    )->getAll();
-                } catch (\Exception $e) {
-                    error_log('GradeController: Failed to load classes: ' . $e->getMessage());
-                    Session::flash('error', 'Failed to load classes. Please try again.');
-                    redirect('/grades');
-                }
-                view($user_role . '/grades/select_class', [
-                    'title' => 'Select Class',
-                    'classes' => $classes,
-                ]);
-                return;
             }
 
-            if (!$lesson_id) {
-                try {
-                    $lessons = Lesson::query(
-                        $user_role === 'teacher' ?
-                            "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ? AND clt.teacher_id = ?" :
-                            "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ?",
-                        $user_role === 'teacher' ? [$class_id, $user_id] : [$class_id]
-                    )->getAll();
-                } catch (\Exception $e) {
-                    error_log('GradeController: Failed to load lessons: ' . $e->getMessage());
-                    Session::flash('error', 'Failed to load lessons. Please try again.');
-                    redirect('/grades?class_id=' . $class_id);
+            foreach ($grades as $grade) {
+                $lesson = $grade['lesson_name'];
+                if ($grade['grade_date']) {
+                    $month = date('F', strtotime($grade['grade_date']));
+                    $lessonGrades[$lesson][$month][] = $grade['grade_value'];
+                    $monthsSet[$month] = true;
                 }
-                view($user_role . '/grades/select_lesson', [
-                    'title' => 'Select Lesson',
-                    'lessons' => $lessons,
-                    'class_id' => $class_id,
-                ]);
-                return;
             }
 
+            $detentions = Detention::query(
+                "SELECT d.*, t.first_name AS teacher_first_name, t.last_name AS teacher_last_name 
+                 FROM detentions d 
+                 JOIN users t ON d.teacher_id = t.id 
+                 WHERE d.student_id = ?",
+                [$user_id]
+            )->getAll();
+
+            $lessonGrades['Detention'] = array_fill_keys(
+                ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'],
+                []
+            );
+            foreach ($detentions as $detention) {
+                $month = date('F', strtotime($detention['detention_date']));
+                $lessonGrades['Detention'][$month][] = $detention['reason'];
+            }
+
+            $sortedMonths = ['September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
+            $classes = [];
+
+            view('student/grades/index', [
+                'title' => 'Grades',
+                'grades' => $grades,
+                'classes' => $classes,
+                'class_id' => $class_id,
+                'lessonGrades' => $lessonGrades,
+                'sortedMonths' => $sortedMonths,
+                'user_role' => $user_role,
+                'detentions' => $detentions,
+                'student_id' => $user_id,
+            ]);
+        } catch (\Exception $e) {
+            error_log('GradeController: Failed to load grades: ' . $e->getMessage());
+            Session::flash('error', 'Failed to load grades: ' . $e->getMessage());
+            redirect('/dashboard');
+        }
+    } else {
+        // Teacher or Admin view
+        if (!$class_id) {
             try {
-                // Fetch students and grades for the selected class and lesson
-                $query = "
-                    SELECT u.id AS student_id, u.first_name, u.last_name, g.id AS grade_id, g.grade_value, g.grade_date
-                    FROM users u
-                    JOIN class_students cs ON u.id = cs.user_id
-                    LEFT JOIN grades g ON u.id = g.student_id AND g.class_id = ? AND g.lesson_id = ?
-                    WHERE cs.class_id = ? AND u.role = 'student'
-                    ORDER BY u.last_name, u.first_name
-                ";
-                $params = [$class_id, $lesson_id, $class_id];
-                $grades = Grade::query($query, $params)->getAll();
-
-                $students = [];
-                $gradeMatrix = [];
-                $weekDays = [];
-                $startDate = new \DateTime($week_start);
-                for ($i = 0; $i < 5; $i++) { // Monday to Friday
-                    $weekDays[] = $startDate->format('Y-m-d l');
-                    $startDate->modify('+1 day');
-                }
-
-                foreach ($grades as $grade) {
-                    $student_id = $grade['student_id'];
-                    if (!isset($students[$student_id])) {
-                        $students[$student_id] = [
-                            'first_name' => $grade['first_name'],
-                            'last_name' => $grade['last_name'],
-                        ];
-                    }
-                    if ($grade['grade_date']) {
-                        $gradeDate = date('Y-m-d', strtotime($grade['grade_date']));
-                        if (in_array($gradeDate . ' ' . date('l', strtotime($gradeDate)), $weekDays)) {
-                            $gradeMatrix[$student_id][$gradeDate] = [
-                                'id' => $grade['grade_id'],
-                                'value' => $grade['grade_value'],
-                            ];
-                        }
-                    }
-                }
-
                 $classes = ClassModel::query(
                     $user_role === 'teacher' ?
                         "SELECT DISTINCT c.* FROM classes c JOIN class_lesson_teachers clt ON c.id = clt.class_id WHERE clt.teacher_id = ?" :
                         "SELECT * FROM classes",
                     $user_role === 'teacher' ? [$user_id] : []
                 )->getAll();
+            } catch (\Exception $e) {
+                error_log('GradeController: Failed to load classes: ' . $e->getMessage());
+                Session::flash('error', 'Failed to load classes. Please try again.');
+                redirect('/dashboard');
+                return;
+            }
+            view('public/grades/select_class', [
+                'title' => 'Select Class',
+                'classes' => $classes,
+            ]);
+            return;
+        }
 
+        if (!$lesson_id) {
+            try {
                 $lessons = Lesson::query(
                     $user_role === 'teacher' ?
                         "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ? AND clt.teacher_id = ?" :
                         "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ?",
                     $user_role === 'teacher' ? [$class_id, $user_id] : [$class_id]
                 )->getAll();
-
-                // Calculate previous and next week
-                $prevWeek = (new \DateTime($week_start))->modify('-1 week')->format('Y-m-d');
-                $nextWeek = (new \DateTime($week_start))->modify('+1 week')->format('Y-m-d');
-
-                view($user_role . '/grades/index', [
-                    'title' => 'Grade Matrix',
-                    'classes' => $classes,
-                    'class_id' => $class_id,
-                    'lessons' => $lessons,
-                    'lesson_id' => $lesson_id,
-                    'students' => $students,
-                    'gradeMatrix' => $gradeMatrix,
-                    'weekDays' => $weekDays,
-                    'week_start' => $week_start,
-                    'prev_week' => $prevWeek,
-                    'next_week' => $nextWeek,
-                    'user_role' => $user_role,
-                ]);
             } catch (\Exception $e) {
-                error_log('GradeController: Failed to load grade matrix: ' . $e->getMessage());
-                Session::flash('error', 'Failed to load grade matrix. Please try again.');
-                redirect('/grades?class_id=' . $class_id);
+                error_log('GradeController: Failed to load lessons: ' . $e->getMessage());
+                Session::flash('error', 'Failed to load lessons. Please try again.');
+                redirect('/dashboard');
+                return;
             }
+            view('public/grades/select_lesson', [
+                'title' => 'Select Lesson',
+                'lessons' => $lessons,
+                'class_id' => $class_id,
+            ]);
+            return;
+        }
+
+        try {
+            $query = "
+                SELECT u.id AS student_id, u.first_name, u.last_name, g.id AS grade_id, g.grade_value, g.grade_date
+                FROM users u
+                JOIN class_students cs ON u.id = cs.user_id
+                LEFT JOIN grades g ON u.id = g.student_id AND g.class_id = ? AND g.lesson_id = ?
+                WHERE cs.class_id = ? AND u.role = 'student'
+                ORDER BY u.last_name, u.first_name
+            ";
+            $params = [$class_id, $lesson_id, $class_id];
+            $grades = Grade::query($query, $params)->getAll();
+
+            $students = [];
+            $gradeMatrix = [];
+            $weekDays = [];
+            $startDate = new \DateTime($week_start);
+            for ($i = 0; $i < 5; $i++) {
+                $weekDays[] = $startDate->format('Y-m-d l');
+                $startDate->modify('+1 day');
+            }
+
+            foreach ($grades as $grade) {
+                $student_id = $grade['student_id'];
+                if (!isset($students[$student_id])) {
+                    $students[$student_id] = [
+                        'first_name' => $grade['first_name'],
+                        'last_name' => $grade['last_name'],
+                    ];
+                }
+                if ($grade['grade_date']) {
+                    $gradeDate = date('Y-m-d', strtotime($grade['grade_date']));
+                    if (in_array($gradeDate . ' ' . date('l', strtotime($gradeDate)), $weekDays)) {
+                        $gradeMatrix[$student_id][$gradeDate] = [
+                            'id' => $grade['grade_id'],
+                            'value' => $grade['grade_value'],
+                        ];
+                    }
+                }
+            }
+
+            $classes = ClassModel::query(
+                $user_role === 'teacher' ?
+                    "SELECT DISTINCT c.* FROM classes c JOIN class_lesson_teachers clt ON c.id = clt.class_id WHERE clt.teacher_id = ?" :
+                    "SELECT * FROM classes",
+                $user_role === 'teacher' ? [$user_id] : []
+            )->getAll();
+
+            $lessons = Lesson::query(
+                $user_role === 'teacher' ?
+                    "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ? AND clt.teacher_id = ?" :
+                    "SELECT DISTINCT l.* FROM lessons l JOIN class_lesson_teachers clt ON l.id = clt.lesson_id WHERE clt.class_id = ?",
+                $user_role === 'teacher' ? [$class_id, $user_id] : [$class_id]
+            )->getAll();
+
+            $prevWeek = (new \DateTime($week_start))->modify('-1 week')->format('Y-m-d');
+            $nextWeek = (new \DateTime($week_start))->modify('+1 week')->format('Y-m-d');
+
+            view('public/grades/index', [
+                'title' => 'Grade Matrix',
+                'classes' => $classes,
+                'class_id' => $class_id,
+                'lessons' => $lessons,
+                'lesson_id' => $lesson_id,
+                'students' => $students,
+                'gradeMatrix' => $gradeMatrix,
+                'weekDays' => $weekDays,
+                'week_start' => $week_start,
+                'prev_week' => $prevWeek,
+                'next_week' => $nextWeek,
+                'user_role' => $user_role,
+            ]);
+        } catch (\Exception $e) {
+            error_log('GradeController: Failed to load grade matrix: ' . $e->getMessage());
+            Session::flash('error', 'Failed to load grade matrix. Please try again.');
+            redirect('/dashboard');
+            return;
         }
     }
+}
 
     public function create(Request $request): void
     {
@@ -252,7 +270,7 @@ class GradeController extends Controller
             redirect('/grades');
         }
 
-        view($_SESSION['user']['role'] . '/grades/create', [
+        view('public/grades/create', [
             'title' => 'Add Grade',
             'classes' => $classes,
             'lessons' => $lessons,
@@ -394,7 +412,7 @@ class GradeController extends Controller
             $prevWeek = (new \DateTime($week_start))->modify('-1 week')->format('Y-m-d');
             $nextWeek = (new \DateTime($week_start))->modify('+1 week')->format('Y-m-d');
 
-            view($_SESSION['user']['role'] . '/grades/edit', [
+            view('public/grades/edit', [
                 'title' => 'Edit Grade Matrix',
                 'classes' => $classes,
                 'class_id' => $class_id,
@@ -630,7 +648,7 @@ class GradeController extends Controller
             redirect('/grades?class_id=' . $class_id);
         }
 
-        view($_SESSION['user']['role'] . '/detentions/create', [
+        view('public/detentions/create', [
             'title' => 'Add Detention',
             'classes' => $classes,
             'students' => $students,

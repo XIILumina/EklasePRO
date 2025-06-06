@@ -9,11 +9,13 @@ class Request
 {
     protected array $data;
     protected array $server;
+    protected array $parameters;
 
-    public function __construct($data, $server)
+    public function __construct(array $data, array $server, array $parameters = [])
     {
-        $this->data = $data;
+        $this->data = $data + $parameters; // Merge URL parameters with data
         $this->server = $server;
+        $this->parameters = $parameters;
     }
 
     public function all(): array
@@ -21,9 +23,9 @@ class Request
         return $this->data;
     }
 
-    public function input($key)
+    public function input($key, $default = null)
     {
-        return $this->data[$key] ?? null;
+        return $this->data[$key] ?? $_GET[$key] ?? $_POST[$key] ?? $default;
     }
 
     public function validate($data): void
